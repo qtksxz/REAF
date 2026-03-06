@@ -1,1 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lua Scripts Hub</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <!-- Netlify Identity Widget -->
+    <script type="text/javascript" src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
+</head>
+<body class="bg-gray-900 text-gray-100 font-sans">
+    <nav class="bg-gray-800 p-4 shadow-lg flex justify-between items-center">
+        <h1 class="text-2xl font-bold text-blue-400">Lua Scripts</h1>
+        <div>
+            <span id="user-info" class="mr-4 hidden"></span>
+            <button id="login-btn" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg transition">Login</button>
+            <button id="logout-btn" class="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg transition hidden">Logout</button>
+            <a href="/admin.html" id="admin-link" class="ml-4 bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded-lg transition hidden">Admin</a>
+        </div>
+    </nav>
 
+    <main class="max-w-6xl mx-auto p-6">
+        <!-- Upload Form (visible only to logged-in whitelisted users) -->
+        <div id="upload-section" class="hidden bg-gray-800 p-6 rounded-lg shadow-xl mb-8 border border-gray-700">
+            <h2 class="text-xl font-semibold mb-4 text-green-400">Upload New Script</h2>
+            <form id="upload-form">
+                <input type="text" id="title" placeholder="Script Title" required
+                    class="w-full p-3 mb-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:border-blue-500">
+                <textarea id="content" placeholder="Lua Code Here..." rows="10" required
+                    class="w-full p-3 mb-3 bg-gray-700 border border-gray-600 rounded-lg font-mono focus:outline-none focus:border-blue-500"></textarea>
+                <button type="submit" class="bg-green-600 hover:bg-green-700 px-6 py-3 rounded-lg font-bold transition">Upload</button>
+                <p id="upload-message" class="mt-2 text-sm"></p>
+            </form>
+        </div>
+
+        <!-- Scripts List -->
+        <div>
+            <h2 class="text-xl font-semibold mb-4 text-blue-400">Recent Scripts</h2>
+            <div id="scripts-list" class="grid gap-4">
+                <!-- Populated by JavaScript -->
+            </div>
+        </div>
+    </main>
+
+    <!-- Script Modal for viewing full code -->
+    <div id="script-modal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center hidden p-4">
+        <div class="bg-gray-800 rounded-lg max-w-4xl w-full max-h-[90vh] overflow-auto p-6">
+            <div class="flex justify-between items-start mb-4">
+                <h3 id="modal-title" class="text-2xl font-bold text-blue-400"></h3>
+                <button onclick="closeModal()" class="text-gray-400 hover:text-white text-2xl">&times;</button>
+            </div>
+            <pre id="modal-content" class="bg-gray-900 p-4 rounded-lg overflow-auto text-sm font-mono border border-gray-700"></pre>
+            <button onclick="copyScript()" class="mt-4 bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg transition">Copy to Clipboard</button>
+        </div>
+    </div>
+
+    <script>
+        // Netlify Identity initialization
+        netlifyIdentity.init();
+
+        // DOM elements
+        const loginBtn = document.getElementById('login-btn');
+        const logoutBtn = document.getElementById('logout-btn');
+        const userInfo = document.getElementById('user-info');
+        const adminLink = document.getElementById('admin-link');
+        const uploadSection = document.getElementById('upload-section');
+        const uploadForm = document.getElementById('upload-form');
+        const uploadMessage = document.getElementById('upload-message');
+        const scriptsList = document.getElementById('scripts-list');
+
+        let currentUser = null;
+
+        // Update UI based on auth state
+        function updateAuthUI(user) {
+            currentUser = user;
+            if (user) {
+                userInfo.textContent = `Logged in as: ${user.email}`;
+                userInfo.classList.remove('hidden');
+                loginBtn.classList.add('hidden');
+                logoutBtn.classList.remove('hidden');
+
+                // Check if user is owner (for admin link)
+                if (user.email === 'adamsms2011@gmail.com') { // Replace with your email
+                    adminLink.classList.remove('hidden');
+                } else {
+                    adminLink.classList.add('hidden');
+                }
+
+                // Check upload permission: we'll call a function that checks whitelist/blacklist
+                checkUploadPermission(user.email);
+            } else {
+                userInfo.classList.add('hidden');
+                loginBtn.classList.remove('hidden');
+                logoutBtn.classList.add('hidden');
+                adminLink.classList.add('hidden');
+                uploadSection.classList.add('hidden');
+            }
+        }
+
+        // Check if user can upload (by attempting to fetch upload section status? we'll simulate by showing form and let backend validate)
+        // For simplicity, we'll always show the form; backend will reject if not allowed.
+        function checkUploadPermission(email) {
+            // In a real app you might want to pre-check via a function, but we'll just show form
+            // and rely on server response.
+            uploadSection.classList.remove('hidden');
+        }
+
+        // Handle login/logout
+        loginBtn.addEventListener('click', () => netlifyIdentity.open());
+        logoutBtn.addEventListener('click', () => {
+            netlifyIdentity.logout();
+            updateAuthUI(null);
+        });
+
+        netlifyIdentity.on('login', user => {
+            netlifyIdentity.close();
+            updateAuthUI(user);
+            loadScripts();
+        });
+
+        netlifyIdentity.on('logout', () => updateAuthUI(null));
+
+        // Load scripts on page load
+        async function loadScripts() {
+            try {
+                const res = await axios.get('/.netlify/functions/get-scripts');
+                const scripts = res.data;
+                scriptsList.innerHTML = scripts.map(s => `
+                    <div class="bg-gray-800 p-4 rounded-lg shadow hover:shadow-xl transition border border-gray-700">
+                        <h3 class="text-lg font-semibold text-blue-400">${escapeHtml(s.title)}</h3>
+                        <p class="text-sm text-gray-400">Uploaded by ${escapeHtml(s.user_email)} on ${new Date(s.created_at).toLocaleString()}</p>
+                        <button onclick="viewScript(${s.id})" class="mt-2 bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded text-sm">View & Copy</button>
+                    </div>
+                `).join('');
+            } catch (err) {
+                console.error(err);
+                scriptsList.innerHTML = '<p class="text-red-400">Failed to load scripts.</p>';
+            }
+        }
+
+        // View script in modal
+        window.viewScript = async (id) => {
+            try {
+                const res = await axios.get(`/.netlify/functions/get-script?id=${id}`);
+                const script = res.data;
+                document.getElementById('modal-title').textContent = script.title;
+                document.getElementById('modal-content').textContent = script.content;
+                document.getElementById('script-modal').classList.remove('hidden');
+                window.currentScriptContent = script.content;
+            } catch (err) {
+                alert('Failed to load script');
+            }
+        };
+
+        window.closeModal = () => {
+            document.getElementById('script-modal').classList.add('hidden');
+        };
+
+        window.copyScript = () => {
+            if (window.currentScriptContent) {
+                navigator.clipboard.writeText(window.currentScriptContent);
+                alert('Copied to clipboard!');
+            }
+        };
+
+        // Upload form submission
+        uploadForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const title = document.getElementById('title').value;
+            const content = document.getElementById('content').value;
+            uploadMessage.textContent = 'Uploading...';
+
+            try {
+                const user = netlifyIdentity.currentUser();
+                if (!user) {
+                    uploadMessage.textContent = 'You must be logged in.';
+                    return;
+                }
+                const token = await user.jwt();
+                const res = await axios.post('/.netlify/functions/upload', { title, content }, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                uploadMessage.textContent = 'Upload successful!';
+                document.getElementById('title').value = '';
+                document.getElementById('content').value = '';
+                loadScripts(); // refresh list
+            } catch (err) {
+                uploadMessage.textContent = err.response?.data || 'Upload failed.';
+            }
+        });
+
+        // Helper to escape HTML
+        function escapeHtml(unsafe) {
+            return unsafe.replace(/[&<>"']/g, function(m) {
+                if(m === '&') return '&amp;';
+                if(m === '<') return '&lt;';
+                if(m === '>') return '&gt;';
+                if(m === '"') return '&quot;';
+                if(m === "'") return '&#039;';
+                return m;
+            });
+        }
+
+        // Initial load
+        loadScripts();
+        const user = netlifyIdentity.currentUser();
+        if (user) updateAuthUI(user);
+    </script>
+</body>
+</html>
