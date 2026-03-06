@@ -1,48 +1,28 @@
-const { supabase } = require('./utils/supabase')
+const { supabase } = require('./utils/supabase');
+
+async function isManager(email) {
+  if (email === process.env.OWNER_EMAIL) return true;
+  const { data } = await supabase.from('admins').select('email').eq('email', email).maybeSingle();
+  return !!data;
+}
 
 exports.handler = async (event) => {
-  if (event.httpMethod !== 'POST') {
-    return { statusCode: 405, body: 'Method Not Allowed' }
-  }
+  if (event.httpMethod !== 'POST') return { statusCode: 405, body: 'Method Not Allowed' };
 
-  const claims = event.context?.clientContext?.user
-  if (!claims || claims.email !== process.env.OWNER_EMAIL) {
-    return { statusCode: 403, body: 'Forbidden' }
-  }
+  const claims = event.context?.clientContext?.user;
+  if (!claims) return { statusCode: 401, body: 'Unauthorized' };
+  if (!await isManager(claims.email)) return { statusCode: 403, body: 'Forbidden' };
 
-  let body
-  try {
-    body = JSON.parse(event.body)
-  } catch {
-    return { statusCode: 400, body: 'Invalid JSON' }
-  }
+  let body;
+  try { body = JSON.parse(event.body); } catch { return { statusCode: 400, body: 'Invalid JSON' }; }
 
-  const { action, email } = body
-  if (!action || !email || !['add', 'remove'].includes(action)) {
-    return { statusCode: 400, body: 'action (add/remove) and email required' }
-  }
+  const { id } = body;
+  if (!id) return { statusCode: 400, body: 'Script ID required' };
 
-  if (action === 'add') {
-    const { error } = await supabase
-      .from('blacklist')
-      .insert([{ email }])
-    if (error) {
-      if (error.code === '23505') {
-        return { statusCode: 409, body: 'Email already blacklisted' }
-      }
-      console.error(error)
-      return { statusCode: 500, body: 'Database error' }
-    }
-    return { statusCode: 200, body: 'Added to blacklist' }
-  } else {
-    const { error } = await supabase
-      .from('blacklist')
-      .delete()
-      .eq('email', email)
-    if (error) {
-      console.error(error)
-      return { statusCode: 500, body: 'Database error' }
-    }
-    return { statusCode: 200, body: 'Removed from blacklist' }
+  const { error } = await supabase.from('scripts').delete().eq('id', id);
+  if (error) {
+    console.error(error);
+    return { statusCode: 500, body: 'Failed to delete script' };
   }
-}
+  return { statusCode: 200, body: 'Script deleted' };
+};
