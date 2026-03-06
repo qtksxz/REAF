@@ -3,76 +3,103 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin - Lua Scripts</title>
+    <title>⚡ LuaForge · Control</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
+    <style>
+        .glass {
+            background: rgba(17, 25, 40, 0.75);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.125);
+        }
+        .btn-glow:hover {
+            box-shadow: 0 0 15px currentColor;
+        }
+    </style>
 </head>
-<body class="bg-gray-900 text-gray-100">
-    <nav class="bg-gray-800 p-4 flex justify-between items-center">
-        <h1 class="text-2xl font-bold text-purple-400">Admin Panel</h1>
-        <a href="/" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg">Back to Scripts</a>
+<body class="bg-gradient-to-br from-gray-900 via-purple-900 to-indigo-900 text-gray-100 min-h-screen">
+    <nav class="glass p-4 flex justify-between items-center sticky top-0 z-50">
+        <h1 class="text-3xl font-extrabold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">⚙️ Control Center</h1>
+        <a href="/" class="bg-blue-600/50 hover:bg-blue-600 px-5 py-2 rounded-xl transition backdrop-blur-sm">← Back to Scripts</a>
     </nav>
 
     <main class="max-w-6xl mx-auto p-6">
         <div class="grid md:grid-cols-2 gap-6">
-            <!-- Whitelist Management -->
-            <div class="bg-gray-800 p-6 rounded-lg border border-gray-700">
-                <h2 class="text-xl font-semibold mb-4 text-green-400">Whitelist</h2>
-                <form id="whitelist-form" class="mb-4">
+            <!-- Whitelist Card -->
+            <div class="glass rounded-2xl p-6">
+                <h2 class="text-xl font-semibold mb-4 text-green-400">✅ Whitelist</h2>
+                <form id="whitelist-form" class="space-y-3">
                     <input type="email" id="whitelist-email" placeholder="Email" required
-                        class="w-full p-2 mb-2 bg-gray-700 border border-gray-600 rounded">
-                    <select id="whitelist-action" class="w-full p-2 mb-2 bg-gray-700 border border-gray-600 rounded">
-                        <option value="add">Add</option>
-                        <option value="remove">Remove</option>
+                        class="w-full p-3 bg-gray-800/50 border border-gray-600 rounded-xl focus:ring-2 focus:ring-green-500 outline-none">
+                    <select id="whitelist-action" class="w-full p-3 bg-gray-800/50 border border-gray-600 rounded-xl">
+                        <option value="add">➕ Add</option>
+                        <option value="remove">➖ Remove</option>
                     </select>
-                    <button type="submit" class="bg-green-600 hover:bg-green-700 px-4 py-2 rounded">Update</button>
+                    <button type="submit" class="bg-green-600 hover:bg-green-500 px-5 py-2 rounded-xl font-medium transition w-full">Update</button>
                 </form>
-                <div id="whitelist-message" class="text-sm"></div>
-                <h3 class="font-semibold mt-4 mb-2">Current Whitelist</h3>
-                <ul id="whitelist-list" class="list-disc pl-5 text-sm"></ul>
+                <div id="whitelist-message" class="text-sm mt-2"></div>
+                <h3 class="font-semibold mt-4">Current Whitelist</h3>
+                <ul id="whitelist-list" class="list-disc pl-5 text-sm mt-2 space-y-1"></ul>
             </div>
 
-            <!-- Blacklist Management -->
-            <div class="bg-gray-800 p-6 rounded-lg border border-gray-700">
-                <h2 class="text-xl font-semibold mb-4 text-red-400">Blacklist</h2>
-                <form id="blacklist-form" class="mb-4">
+            <!-- Blacklist Card -->
+            <div class="glass rounded-2xl p-6">
+                <h2 class="text-xl font-semibold mb-4 text-red-400">⛔ Blacklist</h2>
+                <form id="blacklist-form" class="space-y-3">
                     <input type="email" id="blacklist-email" placeholder="Email" required
-                        class="w-full p-2 mb-2 bg-gray-700 border border-gray-600 rounded">
-                    <select id="blacklist-action" class="w-full p-2 mb-2 bg-gray-700 border border-gray-600 rounded">
-                        <option value="add">Add</option>
-                        <option value="remove">Remove</option>
+                        class="w-full p-3 bg-gray-800/50 border border-gray-600 rounded-xl focus:ring-2 focus:ring-red-500 outline-none">
+                    <select id="blacklist-action" class="w-full p-3 bg-gray-800/50 border border-gray-600 rounded-xl">
+                        <option value="add">➕ Add</option>
+                        <option value="remove">➖ Remove</option>
                     </select>
-                    <button type="submit" class="bg-red-600 hover:bg-red-700 px-4 py-2 rounded">Update</button>
+                    <button type="submit" class="bg-red-600 hover:bg-red-500 px-5 py-2 rounded-xl font-medium transition w-full">Update</button>
                 </form>
-                <div id="blacklist-message" class="text-sm"></div>
-                <h3 class="font-semibold mt-4 mb-2">Current Blacklist</h3>
-                <ul id="blacklist-list" class="list-disc pl-5 text-sm"></ul>
+                <div id="blacklist-message" class="text-sm mt-2"></div>
+                <h3 class="font-semibold mt-4">Current Blacklist</h3>
+                <ul id="blacklist-list" class="list-disc pl-5 text-sm mt-2 space-y-1"></ul>
+            </div>
+
+            <!-- Managers Card (only founder can see? we'll show if user is manager) -->
+            <div class="glass rounded-2xl p-6 md:col-span-2">
+                <h2 class="text-xl font-semibold mb-4 text-purple-400">👥 Managers</h2>
+                <form id="manager-form" class="space-y-3 max-w-md">
+                    <input type="email" id="manager-email" placeholder="Email" required
+                        class="w-full p-3 bg-gray-800/50 border border-gray-600 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none">
+                    <select id="manager-action" class="w-full p-3 bg-gray-800/50 border border-gray-600 rounded-xl">
+                        <option value="add">➕ Add Manager</option>
+                        <option value="remove">➖ Remove Manager</option>
+                    </select>
+                    <button type="submit" class="bg-purple-600 hover:bg-purple-500 px-5 py-2 rounded-xl font-medium transition w-full">Update</button>
+                </form>
+                <div id="manager-message" class="text-sm mt-2"></div>
+                <h3 class="font-semibold mt-4">Current Managers</h3>
+                <ul id="manager-list" class="list-disc pl-5 text-sm mt-2 space-y-1"></ul>
             </div>
         </div>
 
         <!-- Scripts Management -->
-        <div class="mt-8 bg-gray-800 p-6 rounded-lg border border-gray-700">
-            <h2 class="text-xl font-semibold mb-4 text-blue-400">Manage Scripts</h2>
-            <div id="admin-scripts-list" class="grid gap-4">
-                <!-- populated by JS -->
-            </div>
+        <div class="glass rounded-2xl p-6 mt-8">
+            <h2 class="text-xl font-semibold mb-4 text-blue-400">📜 Manage Scripts</h2>
+            <div id="admin-scripts-list" class="grid gap-3"></div>
         </div>
     </main>
 
     <script>
         netlifyIdentity.init();
 
-        // Replace with your email
-        const ownerEmail = 'adamsms2011@gmail.com';
+        const FOUNDER_EMAIL = 'adamsms2011@gmail.co
+            '; // 👈 REPLACE
 
-        async function checkOwner() {
+        async function checkAccess() {
             const user = netlifyIdentity.currentUser();
-            if (!user || user.email !== ownerEmail) {
-                alert('Access denied. You are not the owner.');
+            if (!user) {
+                alert('Please log in.');
                 window.location.href = '/';
                 return false;
             }
+            // We'll rely on backend to enforce; but we can show/hide UI based on manager status later
             return true;
         }
 
@@ -81,112 +108,91 @@
             return user ? await user.jwt() : null;
         }
 
-        async function loadWhitelist() {
+        // Generic fetcher
+        async function fetchList(url, listId) {
             try {
-                const res = await axios.get('/.netlify/functions/get-whitelist');
-                const list = res.data;
-                const ul = document.getElementById('whitelist-list');
-                ul.innerHTML = list.map(item => `<li>${item.email} (${new Date(item.created_at).toLocaleDateString()})</li>`).join('');
+                const res = await axios.get(url);
+                document.getElementById(listId).innerHTML = res.data.map(item => 
+                    `<li>${item.email} <span class="text-gray-400 text-xs">(${new Date(item.created_at).toLocaleDateString()})</span></li>`
+                ).join('');
             } catch (err) {
                 console.error(err);
-                document.getElementById('whitelist-list').innerHTML = '<li class="text-red-400">Error loading</li>';
             }
         }
 
-        async function loadBlacklist() {
-            try {
-                const res = await axios.get('/.netlify/functions/get-blacklist');
-                const list = res.data;
-                const ul = document.getElementById('blacklist-list');
-                ul.innerHTML = list.map(item => `<li>${item.email} (${new Date(item.created_at).toLocaleDateString()})</li>`).join('');
-            } catch (err) {
-                console.error(err);
-                document.getElementById('blacklist-list').innerHTML = '<li class="text-red-400">Error loading</li>';
-            }
-        }
+        function loadWhitelist() { fetchList('/.netlify/functions/get-whitelist', 'whitelist-list'); }
+        function loadBlacklist() { fetchList('/.netlify/functions/get-blacklist', 'blacklist-list'); }
+        function loadManagers() { fetchList('/.netlify/functions/get-admins', 'manager-list'); }
 
         async function loadAdminScripts() {
             try {
                 const res = await axios.get('/.netlify/functions/get-scripts');
-                const scripts = res.data;
                 const container = document.getElementById('admin-scripts-list');
-                container.innerHTML = scripts.map(s => `
-                    <div class="bg-gray-700 p-4 rounded flex justify-between items-center">
+                container.innerHTML = res.data.map(s => `
+                    <div class="flex justify-between items-center bg-gray-800/50 p-3 rounded-xl">
                         <div>
-                            <h3 class="font-semibold">${escapeHtml(s.title)}</h3>
-                            <p class="text-sm text-gray-300">by ${escapeHtml(s.user_email)}</p>
+                            <span class="font-semibold">${escapeHtml(s.title)}</span>
+                            <span class="text-sm text-gray-400 ml-2">by ${escapeHtml(s.user_email)}</span>
                         </div>
-                        <button onclick="deleteScript(${s.id})" class="bg-red-600 hover:bg-red-700 px-3 py-1 rounded text-sm">Delete</button>
+                        <button onclick="deleteScript(${s.id})" class="bg-red-600/80 hover:bg-red-600 px-3 py-1 rounded text-sm">Delete</button>
                     </div>
                 `).join('');
-            } catch (err) {
-                console.error(err);
-            }
+            } catch (err) { console.error(err); }
         }
 
         window.deleteScript = async (id) => {
-            if (!confirm('Are you sure you want to delete this script?')) return;
+            if (!confirm('Delete this script?')) return;
             const token = await getToken();
             try {
                 await axios.post('/.netlify/functions/delete-script', { id }, {
                     headers: { Authorization: `Bearer ${token}` }
                 });
                 loadAdminScripts();
-            } catch (err) {
-                alert('Failed to delete');
-            }
+            } catch (err) { alert('Failed'); }
         };
 
-        document.getElementById('whitelist-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const email = document.getElementById('whitelist-email').value;
-            const action = document.getElementById('whitelist-action').value;
-            const token = await getToken();
-            try {
-                await axios.post('/.netlify/functions/whitelist', { action, email }, {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
-                document.getElementById('whitelist-message').textContent = 'Success';
-                loadWhitelist();
-            } catch (err) {
-                document.getElementById('whitelist-message').textContent = err.response?.data || 'Error';
-            }
-        });
-
-        document.getElementById('blacklist-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const email = document.getElementById('blacklist-email').value;
-            const action = document.getElementById('blacklist-action').value;
-            const token = await getToken();
-            try {
-                await axios.post('/.netlify/functions/blacklist', { action, email }, {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
-                document.getElementById('blacklist-message').textContent = 'Success';
-                loadBlacklist();
-            } catch (err) {
-                document.getElementById('blacklist-message').textContent = err.response?.data || 'Error';
-            }
-        });
-
-        function escapeHtml(unsafe) {
-            return unsafe.replace(/[&<>"']/g, function(m) {
-                if(m === '&') return '&amp;';
-                if(m === '<') return '&lt;';
-                if(m === '>') return '&gt;';
-                if(m === '"') return '&quot;';
-                if(m === "'") return '&#039;';
-                return m;
+        // Setup form handlers
+        function setupForm(formId, endpoint, messageId, reloadCallback) {
+            document.getElementById(formId).addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const email = document.getElementById(formId.replace('form', 'email')).value;
+                const action = document.getElementById(formId.replace('form', 'action')).value;
+                const token = await getToken();
+                try {
+                    await axios.post(endpoint, { action, email }, {
+                        headers: { Authorization: `Bearer ${token}` }
+                    });
+                    document.getElementById(messageId).textContent = '✅ Success';
+                    reloadCallback();
+                } catch (err) {
+                    document.getElementById(messageId).textContent = err.response?.data || 'Error';
+                }
             });
         }
 
+        // Initialize
         (async () => {
-            if (await checkOwner()) {
+            if (await checkAccess()) {
                 loadWhitelist();
                 loadBlacklist();
+                loadManagers();
                 loadAdminScripts();
+
+                setupForm('whitelist-form', '/.netlify/functions/whitelist', 'whitelist-message', loadWhitelist);
+                setupForm('blacklist-form', '/.netlify/functions/blacklist', 'blacklist-message', loadBlacklist);
+                setupForm('manager-form', '/.netlify/functions/manage-admin', 'manager-message', loadManagers);
             }
         })();
+
+        function escapeHtml(unsafe) {
+            return unsafe.replace(/[&<>"']/g, m => {
+                if (m === '&') return '&amp;';
+                if (m === '<') return '&lt;';
+                if (m === '>') return '&gt;';
+                if (m === '"') return '&quot;';
+                return '&#039;';
+            });
+        }
     </script>
 </body>
 </html>
