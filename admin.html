@@ -1,1 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Lua Scripts</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
+</head>
+<body class="bg-gray-900 text-gray-100">
+    <nav class="bg-gray-800 p-4 flex justify-between items-center">
+        <h1 class="text-2xl font-bold text-purple-400">Admin Panel</h1>
+        <a href="/" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg">Back to Scripts</a>
+    </nav>
 
+    <main class="max-w-6xl mx-auto p-6">
+        <div class="grid md:grid-cols-2 gap-6">
+            <!-- Whitelist Management -->
+            <div class="bg-gray-800 p-6 rounded-lg border border-gray-700">
+                <h2 class="text-xl font-semibold mb-4 text-green-400">Whitelist</h2>
+                <form id="whitelist-form" class="mb-4">
+                    <input type="email" id="whitelist-email" placeholder="Email" required
+                        class="w-full p-2 mb-2 bg-gray-700 border border-gray-600 rounded">
+                    <select id="whitelist-action" class="w-full p-2 mb-2 bg-gray-700 border border-gray-600 rounded">
+                        <option value="add">Add</option>
+                        <option value="remove">Remove</option>
+                    </select>
+                    <button type="submit" class="bg-green-600 hover:bg-green-700 px-4 py-2 rounded">Update</button>
+                </form>
+                <div id="whitelist-message" class="text-sm"></div>
+                <h3 class="font-semibold mt-4 mb-2">Current Whitelist</h3>
+                <ul id="whitelist-list" class="list-disc pl-5 text-sm"></ul>
+            </div>
+
+            <!-- Blacklist Management -->
+            <div class="bg-gray-800 p-6 rounded-lg border border-gray-700">
+                <h2 class="text-xl font-semibold mb-4 text-red-400">Blacklist</h2>
+                <form id="blacklist-form" class="mb-4">
+                    <input type="email" id="blacklist-email" placeholder="Email" required
+                        class="w-full p-2 mb-2 bg-gray-700 border border-gray-600 rounded">
+                    <select id="blacklist-action" class="w-full p-2 mb-2 bg-gray-700 border border-gray-600 rounded">
+                        <option value="add">Add</option>
+                        <option value="remove">Remove</option>
+                    </select>
+                    <button type="submit" class="bg-red-600 hover:bg-red-700 px-4 py-2 rounded">Update</button>
+                </form>
+                <div id="blacklist-message" class="text-sm"></div>
+                <h3 class="font-semibold mt-4 mb-2">Current Blacklist</h3>
+                <ul id="blacklist-list" class="list-disc pl-5 text-sm"></ul>
+            </div>
+        </div>
+
+        <!-- Scripts Management -->
+        <div class="mt-8 bg-gray-800 p-6 rounded-lg border border-gray-700">
+            <h2 class="text-xl font-semibold mb-4 text-blue-400">Manage Scripts</h2>
+            <div id="admin-scripts-list" class="grid gap-4">
+                <!-- populated by JS -->
+            </div>
+        </div>
+    </main>
+
+    <script>
+        netlifyIdentity.init();
+
+        // Replace with your email
+        const ownerEmail = 'adamsms2011@gmail.com';
+
+        async function checkOwner() {
+            const user = netlifyIdentity.currentUser();
+            if (!user || user.email !== ownerEmail) {
+                alert('Access denied. You are not the owner.');
+                window.location.href = '/';
+                return false;
+            }
+            return true;
+        }
+
+        async function getToken() {
+            const user = netlifyIdentity.currentUser();
+            return user ? await user.jwt() : null;
+        }
+
+        async function loadWhitelist() {
+            try {
+                const res = await axios.get('/.netlify/functions/get-whitelist');
+                const list = res.data;
+                const ul = document.getElementById('whitelist-list');
+                ul.innerHTML = list.map(item => `<li>${item.email} (${new Date(item.created_at).toLocaleDateString()})</li>`).join('');
+            } catch (err) {
+                console.error(err);
+                document.getElementById('whitelist-list').innerHTML = '<li class="text-red-400">Error loading</li>';
+            }
+        }
+
+        async function loadBlacklist() {
+            try {
+                const res = await axios.get('/.netlify/functions/get-blacklist');
+                const list = res.data;
+                const ul = document.getElementById('blacklist-list');
+                ul.innerHTML = list.map(item => `<li>${item.email} (${new Date(item.created_at).toLocaleDateString()})</li>`).join('');
+            } catch (err) {
+                console.error(err);
+                document.getElementById('blacklist-list').innerHTML = '<li class="text-red-400">Error loading</li>';
+            }
+        }
+
+        async function loadAdminScripts() {
+            try {
+                const res = await axios.get('/.netlify/functions/get-scripts');
+                const scripts = res.data;
+                const container = document.getElementById('admin-scripts-list');
+                container.innerHTML = scripts.map(s => `
+                    <div class="bg-gray-700 p-4 rounded flex justify-between items-center">
+                        <div>
+                            <h3 class="font-semibold">${escapeHtml(s.title)}</h3>
+                            <p class="text-sm text-gray-300">by ${escapeHtml(s.user_email)}</p>
+                        </div>
+                        <button onclick="deleteScript(${s.id})" class="bg-red-600 hover:bg-red-700 px-3 py-1 rounded text-sm">Delete</button>
+                    </div>
+                `).join('');
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        window.deleteScript = async (id) => {
+            if (!confirm('Are you sure you want to delete this script?')) return;
+            const token = await getToken();
+            try {
+                await axios.post('/.netlify/functions/delete-script', { id }, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                loadAdminScripts();
+            } catch (err) {
+                alert('Failed to delete');
+            }
+        };
+
+        document.getElementById('whitelist-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('whitelist-email').value;
+            const action = document.getElementById('whitelist-action').value;
+            const token = await getToken();
+            try {
+                await axios.post('/.netlify/functions/whitelist', { action, email }, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                document.getElementById('whitelist-message').textContent = 'Success';
+                loadWhitelist();
+            } catch (err) {
+                document.getElementById('whitelist-message').textContent = err.response?.data || 'Error';
+            }
+        });
+
+        document.getElementById('blacklist-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('blacklist-email').value;
+            const action = document.getElementById('blacklist-action').value;
+            const token = await getToken();
+            try {
+                await axios.post('/.netlify/functions/blacklist', { action, email }, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                document.getElementById('blacklist-message').textContent = 'Success';
+                loadBlacklist();
+            } catch (err) {
+                document.getElementById('blacklist-message').textContent = err.response?.data || 'Error';
+            }
+        });
+
+        function escapeHtml(unsafe) {
+            return unsafe.replace(/[&<>"']/g, function(m) {
+                if(m === '&') return '&amp;';
+                if(m === '<') return '&lt;';
+                if(m === '>') return '&gt;';
+                if(m === '"') return '&quot;';
+                if(m === "'") return '&#039;';
+                return m;
+            });
+        }
+
+        (async () => {
+            if (await checkOwner()) {
+                loadWhitelist();
+                loadBlacklist();
+                loadAdminScripts();
+            }
+        })();
+    </script>
+</body>
+</html>
