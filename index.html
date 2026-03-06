@@ -27,8 +27,17 @@
             <form id="upload-form">
                 <input type="text" id="title" placeholder="Script Title" required
                     class="w-full p-3 mb-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:border-blue-500">
-                <textarea id="content" placeholder="Lua Code Here..." rows="10" required
+
+                <!-- File upload area -->
+                <div class="mb-3 flex flex-col sm:flex-row items-start sm:items-center gap-2">
+                    <input type="file" id="lua-file" accept=".lua,.txt,text/plain" 
+                        class="bg-gray-700 text-gray-300 p-2 rounded border border-gray-600 file:mr-3 file:py-1 file:px-3 file:border-0 file:bg-blue-600 file:text-white file:rounded file:cursor-pointer">
+                    <button type="button" id="load-file-btn" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded text-sm w-full sm:w-auto">Load File</button>
+                </div>
+
+                <textarea id="content" placeholder="Lua Code Here... (or load from file)" rows="10" required
                     class="w-full p-3 mb-3 bg-gray-700 border border-gray-600 rounded-lg font-mono focus:outline-none focus:border-blue-500"></textarea>
+
                 <button type="submit" class="bg-green-600 hover:bg-green-700 px-6 py-3 rounded-lg font-bold transition">Upload</button>
                 <p id="upload-message" class="mt-2 text-sm"></p>
             </form>
@@ -87,8 +96,8 @@
                     adminLink.classList.add('hidden');
                 }
 
-                // Check upload permission: we'll call a function that checks whitelist/blacklist
-                checkUploadPermission(user.email);
+                // Show upload form (backend will validate whitelist/blacklist)
+                uploadSection.classList.remove('hidden');
             } else {
                 userInfo.classList.add('hidden');
                 loginBtn.classList.remove('hidden');
@@ -96,14 +105,6 @@
                 adminLink.classList.add('hidden');
                 uploadSection.classList.add('hidden');
             }
-        }
-
-        // Check if user can upload (by attempting to fetch upload section status? we'll simulate by showing form and let backend validate)
-        // For simplicity, we'll always show the form; backend will reject if not allowed.
-        function checkUploadPermission(email) {
-            // In a real app you might want to pre-check via a function, but we'll just show form
-            // and rely on server response.
-            uploadSection.classList.remove('hidden');
         }
 
         // Handle login/logout
@@ -184,10 +185,37 @@
                 uploadMessage.textContent = 'Upload successful!';
                 document.getElementById('title').value = '';
                 document.getElementById('content').value = '';
+                document.getElementById('lua-file').value = ''; // clear file input
                 loadScripts(); // refresh list
             } catch (err) {
                 uploadMessage.textContent = err.response?.data || 'Upload failed.';
             }
+        });
+
+        // File loading
+        document.getElementById('load-file-btn').addEventListener('click', function() {
+            const fileInput = document.getElementById('lua-file');
+            const file = fileInput.files[0];
+            if (!file) {
+                alert('Please select a .lua file first.');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                // Set content textarea
+                document.getElementById('content').value = e.target.result;
+
+                // Auto-fill title from filename (without extension)
+                let fileName = file.name;
+                if (fileName.toLowerCase().endsWith('.lua')) {
+                    fileName = fileName.slice(0, -4);
+                } else if (fileName.toLowerCase().endsWith('.txt')) {
+                    fileName = fileName.slice(0, -4);
+                }
+                document.getElementById('title').value = fileName;
+            };
+            reader.readAsText(file);
         });
 
         // Helper to escape HTML
