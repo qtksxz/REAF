@@ -15,8 +15,8 @@ exports.handler = async (event) => {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: new URLSearchParams({
-        client_id: process.env.DISCORD_CLIENT_ID,
-        client_secret: process.env.DISCORD_CLIENT_SECRET,
+        client_id: process.env.1479499090936205502,
+        client_ secret: process.env.D_Mwa4Znt7vosyjt9FfAR48pfETg-zZa,
         code,
         grant_type: 'authorization_code',
         redirect_uri: 'https://lua-file-uploader.netlify.app/.netlify/functions/auth-discord',
