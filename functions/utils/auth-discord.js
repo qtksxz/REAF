@@ -1,4 +1,5 @@
-// netlify/functions/auth-discord/auth-discord.js
+const https = require('https');
+
 exports.handler = async (event) => {
   const { code } = event.queryStringParameters;
 
@@ -11,38 +12,77 @@ exports.handler = async (event) => {
 
   try {
     // Exchange code for token
-    const tokenResponse = await fetch('https://discord.com/api/oauth2/token', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        client_id: process.env.1479499090936205502,
-        client_ secret: process.env.D_Mwa4Znt7vosyjt9FfAR48pfETg-zZa,
+    const tokenData = await new Promise((resolve, reject) => {
+      const data = new URLSearchParams({
+        client_id: process.env.DISCORD_CLIENT_ID,
+        client_secret: process.env.DISCORD_CLIENT_SECRET,
         code,
         grant_type: 'authorization_code',
         redirect_uri: 'https://lua-file-uploader.netlify.app/.netlify/functions/auth-discord',
         scope: 'identify email',
-      }),
+      });
+
+      const options = {
+        hostname: 'discord.com',
+        path: '/api/oauth2/token',
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'Content-Length': Buffer.byteLength(data),
+        },
+      };
+
+      const req = https.request(options, (res) => {
+        let body = '';
+        res.on('data', chunk => body += chunk);
+        res.on('end', () => {
+          if (res.statusCode >= 200 && res.statusCode < 300) {
+            resolve(JSON.parse(body));
+          } else {
+            reject(new Error(`Discord token error: ${res.statusCode} ${body}`));
+          }
+        });
+      });
+
+      req.on('error', reject);
+      req.write(data);
+      req.end();
     });
 
-    const tokenData = await tokenResponse.json();
-
     if (!tokenData.access_token) {
-      throw new Error('Failed to get access token');
+      throw new Error('No access token received');
     }
 
     // Fetch user info
-    const userResponse = await fetch('https://discord.com/api/users/@me', {
-      headers: { Authorization: `Bearer ${tokenData.access_token}` },
-    });
-    const user = await userResponse.json();
+    const user = await new Promise((resolve, reject) => {
+      const options = {
+        hostname: 'discord.com',
+        path: '/api/users/@me',
+        headers: {
+          Authorization: `Bearer ${tokenData.access_token}`,
+        },
+      };
 
-    // Return user data as JSON (you could also set a cookie here)
+      const req = https.get(options, (res) => {
+        let body = '';
+        res.on('data', chunk => body += chunk);
+        res.on('end', () => {
+          if (res.statusCode >= 200 && res.statusCode < 300) {
+            resolve(JSON.parse(body));
+          } else {
+            reject(new Error(`Discord user error: ${res.statusCode} ${body}`));
+          }
+        });
+      });
+
+      req.on('error', reject);
+      req.end();
+    });
+
     return {
       statusCode: 200,
       headers: {
         'Content-Type': 'application/json',
-        // Set a cookie for session (optional, more secure)
-        'Set-Cookie': `discord_user=${encodeURIComponent(JSON.stringify(user))}; Path=/; HttpOnly; Secure; SameSite=Strict`,
       },
       body: JSON.stringify({ user }),
     };
