@@ -3,228 +3,89 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>✨ LuaForge – Advanced Script Hub</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-    <script type="text/javascript" src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
+    <title>Lua File Uploader</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:opsz@14..32&display=swap');
-        * { font-family: 'Inter', sans-serif; }
-        .glass {
-            background: rgba(17, 25, 40, 0.75);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.125);
-        }
-        .btn-glow:hover {
-            box-shadow: 0 0 15px currentColor;
-        }
-        .fade-in {
-            animation: fadeIn 0.5s ease-in-out;
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
+        body { font-family: Arial, sans-serif; text-align: center; margin-top: 50px; }
+        .auth-section { margin: 20px; }
+        button { padding: 10px 20px; font-size: 16px; cursor: pointer; }
+        .user-info { margin-top: 20px; }
     </style>
 </head>
-<body class="bg-gradient-to-br from-gray-900 via-purple-900 to-indigo-900 text-gray-100 min-h-screen">
-    <nav class="glass p-4 shadow-2xl flex justify-between items-center sticky top-0 z-50">
-        <h1 class="text-3xl font-extrabold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">⚡ LuaForge</h1>
-        <div class="flex items-center gap-3">
-            <span id="user-info" class="text-sm text-gray-300 hidden"></span>
-            <button id="login-btn" class="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 px-5 py-2 rounded-xl font-semibold transition-all duration-300 btn-glow">Login</button>
-            <button id="logout-btn" class="bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-500 hover:to-pink-500 px-5 py-2 rounded-xl font-semibold transition-all duration-300 hidden">Logout</button>
-            <a href="/admin.html" id="admin-link" class="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 px-5 py-2 rounded-xl font-semibold transition-all duration-300 hidden">⚙️ Control</a>
-        </div>
-    </nav>
-
-    <main class="max-w-6xl mx-auto p-6 space-y-8">
-        <!-- Upload Card -->
-        <div id="upload-section" class="glass rounded-2xl p-8 hidden fade-in">
-            <h2 class="text-2xl font-bold bg-gradient-to-r from-green-400 to-emerald-400 bg-clip-text text-transparent mb-6">📤 Upload New Script</h2>
-            <form id="upload-form" class="space-y-5">
-                <input type="text" id="title" placeholder="Script Title" required
-                    class="w-full p-4 bg-gray-800/50 border border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition">
-
-                <!-- File Upload Row -->
-                <div class="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
-                    <input type="file" id="lua-file" accept=".lua,.txt,text/plain"
-                        class="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700 transition">
-                    <button type="button" id="load-file-btn" class="bg-indigo-600 hover:bg-indigo-500 px-6 py-2 rounded-xl font-medium transition-all duration-300 w-full sm:w-auto">📂 Load File</button>
-                </div>
-
-                <textarea id="content" placeholder="-- Paste your Lua code here or load from file" rows="8" required
-                    class="w-full p-4 bg-gray-800/50 border border-gray-600 rounded-xl font-mono text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"></textarea>
-
-                <button type="submit" class="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-400 hover:to-emerald-400 px-8 py-3 rounded-xl font-bold text-lg transition-all duration-300 btn-glow w-full sm:w-auto">🚀 Upload</button>
-                <p id="upload-message" class="text-sm mt-2"></p>
-            </form>
-        </div>
-
-        <!-- Scripts Grid -->
-        <div>
-            <h2 class="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent mb-6">📜 Recent Scripts</h2>
-            <div id="scripts-list" class="grid md:grid-cols-2 gap-5">
-                <!-- Populated by JS -->
-            </div>
-        </div>
-    </main>
-
-    <!-- Modal -->
-    <div id="script-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center hidden p-4 z-50">
-        <div class="glass rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-auto p-6">
-            <div class="flex justify-between items-start mb-4">
-                <h3 id="modal-title" class="text-2xl font-bold text-transparent bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text"></h3>
-                <button onclick="closeModal()" class="text-gray-400 hover:text-white text-3xl">&times;</button>
-            </div>
-            <pre id="modal-content" class="bg-gray-900/80 p-4 rounded-xl overflow-auto text-sm font-mono border border-gray-700"></pre>
-            <button onclick="copyScript()" class="mt-5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 px-6 py-2 rounded-xl font-medium transition-all duration-300">📋 Copy to Clipboard</button>
-        </div>
+<body>
+    <h1>Lua File Uploader</h1>
+    <div class="auth-section">
+        <button id="login-btn">Login with Discord</button>
+        <button id="logout-btn" style="display:none;">Logout</button>
     </div>
+    <div id="user-info" class="user-info"></div>
 
     <script>
-        netlifyIdentity.init();
+        // Discord OAuth configuration
+        const CLIENT_ID = 'YOUR_DISCORD_CLIENT_ID'; // Replace with your Discord app's client ID
+        const REDIRECT_URI = encodeURIComponent('https://lua-file-uploader.netlify.app/.netlify/functions/auth-discord');
+        const DISCORD_AUTH_URL = `https://discord.com/api/oauth2/authorize?client_id=${CLIENT_ID}&redirect_uri=${REDIRECT_URI}&response_type=code&scope=identify%20email`;
 
-        const loginBtn = document.getElementById('login-btn');
-        const logoutBtn = document.getElementById('logout-btn');
-        const userInfo = document.getElementById('user-info');
-        const adminLink = document.getElementById('admin-link');
-        const uploadSection = document.getElementById('upload-section');
-        const uploadForm = document.getElementById('upload-form');
-        const uploadMessage = document.getElementById('upload-message');
-        const scriptsList = document.getElementById('scripts-list');
+        // Check if we have a user in localStorage (from previous login)
+        let currentUser = JSON.parse(localStorage.getItem('discord_user'));
 
-        const FOUNDER_EMAIL = 'adamsms2011@gmail.com'; // 👈 REPLACE WITH YOUR EMAIL
+        // Update UI based on login state
+        function updateUI() {
+            const loginBtn = document.getElementById('login-btn');
+            const logoutBtn = document.getElementById('logout-btn');
+            const userInfoDiv = document.getElementById('user-info');
 
-        function updateAuthUI(user) {
-            if (user) {
-                userInfo.textContent = `👤 ${user.email}`;
-                userInfo.classList.remove('hidden');
-                loginBtn.classList.add('hidden');
-                logoutBtn.classList.remove('hidden');
-
-                // Show admin link only if founder or manager (we'll check on admin page)
-                adminLink.classList.remove('hidden');
-                uploadSection.classList.remove('hidden');
+            if (currentUser) {
+                loginBtn.style.display = 'none';
+                logoutBtn.style.display = 'inline-block';
+                userInfoDiv.innerHTML = `
+                    <p>Logged in as: <strong>${currentUser.username}</strong>#${currentUser.discriminator}</p>
+                    <p>Email: ${currentUser.email || 'Not provided'}</p>
+                    <img src="https://cdn.discordapp.com/avatars/${currentUser.id}/${currentUser.avatar}.png" width="100" />
+                `;
             } else {
-                userInfo.classList.add('hidden');
-                loginBtn.classList.remove('hidden');
-                logoutBtn.classList.add('hidden');
-                adminLink.classList.add('hidden');
-                uploadSection.classList.add('hidden');
+                loginBtn.style.display = 'inline-block';
+                logoutBtn.style.display = 'none';
+                userInfoDiv.innerHTML = '';
             }
         }
 
-        loginBtn.addEventListener('click', () => netlifyIdentity.open());
-        logoutBtn.addEventListener('click', () => {
-            netlifyIdentity.logout();
-            updateAuthUI(null);
+        // Handle login button click
+        document.getElementById('login-btn').addEventListener('click', () => {
+            window.location.href = DISCORD_AUTH_URL;
         });
 
-        netlifyIdentity.on('login', user => {
-            netlifyIdentity.close();
-            updateAuthUI(user);
-            loadScripts();
+        // Handle logout
+        document.getElementById('logout-btn').addEventListener('click', () => {
+            localStorage.removeItem('discord_user');
+            currentUser = null;
+            updateUI();
         });
-        netlifyIdentity.on('logout', () => updateAuthUI(null));
 
-        async function loadScripts() {
-            try {
-                const res = await axios.get('/.netlify/functions/get-scripts');
-                const scripts = res.data;
-                scriptsList.innerHTML = scripts.map(s => `
-                    <div class="glass rounded-xl p-5 hover:scale-[1.02] transition-all duration-300 fade-in">
-                        <h3 class="text-xl font-semibold text-blue-300">${escapeHtml(s.title)}</h3>
-                        <p class="text-sm text-gray-400 mt-1">by ${escapeHtml(s.user_email)} · ${new Date(s.created_at).toLocaleDateString()}</p>
-                        <button onclick="viewScript(${s.id})" class="mt-3 bg-blue-600/50 hover:bg-blue-600 px-4 py-2 rounded-lg text-sm backdrop-blur-sm transition">🔍 View & Copy</button>
-                    </div>
-                `).join('');
-            } catch (err) {
-                scriptsList.innerHTML = '<p class="text-red-400">Failed to load scripts.</p>';
-            }
-        }
+        // On page load, check for the OAuth code in URL (callback from Discord)
+        (async function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const code = urlParams.get('code');
 
-        window.viewScript = async (id) => {
-            try {
-                const res = await axios.get(`/.netlify/functions/get-script?id=${id}`);
-                const script = res.data;
-                document.getElementById('modal-title').textContent = script.title;
-                document.getElementById('modal-content').textContent = script.content;
-                document.getElementById('script-modal').classList.remove('hidden');
-                window.currentScriptContent = script.content;
-            } catch (err) {
-                alert('Failed to load script');
-            }
-        };
-
-        window.closeModal = () => {
-            document.getElementById('script-modal').classList.add('hidden');
-        };
-
-        window.copyScript = () => {
-            if (window.currentScriptContent) {
-                navigator.clipboard.writeText(window.currentScriptContent);
-                alert('Copied!');
-            }
-        };
-
-        uploadForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const title = document.getElementById('title').value;
-            const content = document.getElementById('content').value;
-            uploadMessage.textContent = 'Uploading...';
-
-            try {
-                const user = netlifyIdentity.currentUser();
-                if (!user) {
-                    uploadMessage.textContent = 'You must be logged in.';
-                    return;
+            if (code) {
+                // We have a code, call our Netlify Function to exchange it
+                try {
+                    const response = await fetch(`/.netlify/functions/auth-discord?code=${code}`);
+                    const data = await response.json();
+                    if (data.user) {
+                        localStorage.setItem('discord_user', JSON.stringify(data.user));
+                        currentUser = data.user;
+                        // Remove code from URL to avoid sharing
+                        window.history.replaceState({}, document.title, '/');
+                    } else {
+                        alert('Login failed: ' + (data.error || 'Unknown error'));
+                    }
+                } catch (err) {
+                    alert('Login error: ' + err.message);
                 }
-                const token = await user.jwt();
-                await axios.post('/.netlify/functions/upload', { title, content }, {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
-                uploadMessage.textContent = '✅ Upload successful!';
-                document.getElementById('title').value = '';
-                document.getElementById('content').value = '';
-                document.getElementById('lua-file').value = '';
-                loadScripts();
-            } catch (err) {
-                uploadMessage.textContent = err.response?.data || 'Upload failed.';
             }
-        });
 
-        document.getElementById('load-file-btn').addEventListener('click', function() {
-            const fileInput = document.getElementById('lua-file');
-            const file = fileInput.files[0];
-            if (!file) {
-                alert('Select a .lua file first.');
-                return;
-            }
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                document.getElementById('content').value = e.target.result;
-                let fileName = file.name;
-                if (fileName.toLowerCase().endsWith('.lua')) fileName = fileName.slice(0, -4);
-                document.getElementById('title').value = fileName;
-            };
-            reader.readAsText(file);
-        });
-
-        function escapeHtml(unsafe) {
-            return unsafe.replace(/[&<>"']/g, m => {
-                if (m === '&') return '&amp;';
-                if (m === '<') return '&lt;';
-                if (m === '>') return '&gt;';
-                if (m === '"') return '&quot;';
-                return '&#039;';
-            });
-        }
-
-        loadScripts();
-        const user = netlifyIdentity.currentUser();
-        if (user) updateAuthUI(user);
+            updateUI();
+        })();
     </script>
 </body>
 </html>
